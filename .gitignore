@@ -1,0 +1,7 @@
+.*~
+.*.sw?
+*.o
+tests
+build
+stage
+bin
