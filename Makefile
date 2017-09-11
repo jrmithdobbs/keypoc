@@ -20,25 +20,28 @@ TEST_OPTS := \
   -DDEBUG_PRINT \
 
 CFLAGS := \
-	-std=c11 -Wall -Werror -pedantic \
-	-fPIC -fPIE \
+	-std=c11 -Wall -Werror -fPIC \
 	$(INCLUDES) \
   $(OPTIONS) \
 
+# Override with path to a .a static lib for static build
+# eg: make LIBSODIUM=./libsodium.a all
 LIBSODIUM ?= -lsodium
 
 LIBS := \
   $(LIBSODIUM)
 
 LDFLAGS := \
+	-fPIC \
 	$(LIBPATH) \
-	-fPIC -fPIE \
 
 OBJS := \
 	src/storage.o \
 
 TARGETS := \
-	tests/storage
+	tests/storage \
+	lib/hmacsha1mem.auth \
+	bin/modtest_main \
 
 all: $(TARGETS)
 .PHONY: all
@@ -50,16 +53,28 @@ tests:
 	mkdir -p "$@"
 
 tests/%_test.o: src/%.c tests
-	$(CC) $(CFLAGS) $(TEST_OPTS) -c -o "$@" $<
+	$(CC) $(CFLAGS) $(TEST_OPTS) -c -o "$@" $(filter %.c %.o %.a,$^)
 
-tests/%: tests/%_test.o
-	$(CC) $(CFLAGS) $(TEST_OPTS) $(LDFLAGS) -o "$@" $^ $(LIBS)
+tests/%: tests/%_test.o tests
+	$(CC) $(CFLAGS) $(TEST_OPTS) $(LDFLAGS) -o "$@" $(filter %.c %.o %.a,$^) $(LIBS)
 
-bin/%: src/%.o
-	$(CC) $(CFLAGS) $(OPTS) $(LDFLAGS) -o "$@" $^ $(LIBS)
+bin:
+	mkdir -p "$@"
+
+bin/%: src/%.o bin
+	$(CC) $(CFLAGS) $(OPTS) $(LDFLAGS) -o "$@" $(filter %.c %.o %.a,$^) $(LIBS)
+
+lib:
+	mkdir -p "$@"
+
+lib/%_mod.o: src/%_mod.c lib
+	$(CC) $(CFLAGS) $(OPTS) -fPIC -c -o "$@" $(filter %.c %.o %.a,$^)
+
+lib/%.auth: lib/%_mod.o lib
+	$(CC) $(CFLAGS) $(OPTS) $(LDFLAGS) -shared -o "$@" $(filter %.c %.o %.a,$^) $(LIBS)
 
 clean:
-	rm -rfv storage *.o tests
+	rm -rfv tests bin lib src/*.o
 .PHONY: clean
 
 test: tests/storage
@@ -74,3 +89,6 @@ test: tests/storage
 .PRECIOUS: tests/%_test.o
 .PRECIOUS: tests/%.o
 .PRECIOUS: tests/%
+.PRECIOUS: lib/%_mod.o
+.PRECIOUS: lib/%
+.PRECIOUS: bin/%
