@@ -42,13 +42,12 @@ int main(int argc, char**argv, char**envp) {
 
     printf("test-0x%04x:%.*s:", i - 1, pname_sz, pname);
 
-    if (prefx_sz != 0) {
-      snprintf(fname, fname_sz + 1, "%.*s/%.*s%.*s",
-        prefx_sz, prefx, pname_sz, pname, suffx_sz, suffx);
-    } else {
-      snprintf(fname, fname_sz, "%.*s%.*s%.*s",
-        prefx_sz, prefx, pname_sz, pname, suffx_sz, suffx);
-    }
+    static const char fmt_wi_slash[] = "%.*s/%.*s%.*s";
+    static const char fmt_wo_slash[] = "%.*s%.*s%.*s";
+
+    snprintf(fname, fname_sz + 1,
+      prefx_sz ? fmt_wi_slash : fmt_wo_slash,
+      prefx_sz, prefx, pname_sz, pname, suffx_sz, suffx);
 
     printf("lib-%.*s:", fname_sz, fname);
 
