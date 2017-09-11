@@ -7,5 +7,6 @@ tests
 build
 stage
 bin
+lib
 .*~
 .*.sw?
