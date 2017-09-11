@@ -1,10 +1,11 @@
 #ifndef __KEYTOOL_STORAGE_H
 #define __KEYTOOL_STORAGE_H
+
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-#include <stdint.h>
+#include "util.h"
 
 #pragma pack(1)
 typedef uint8_t key_store_b[64];
@@ -42,19 +43,6 @@ void challenge_new_random_tf_key(challenge * c);
 void challenge_new_with_tf_key(challenge * c, const uint8_t * k);
 void challenge_encode(challenge * c, const uint8_t * pw, uint64_t pwlen);
 void challenge_decode(challenge * c, const uint8_t * pw, uint64_t pwlen, uint8_t *resp, uint64_t resplen);
-
-#ifdef DEBUG_PRINT
-#define debugprint(n,t,c)\
-    { printf("%s\n", (n)); \
-      for (uint8_t *p = (uint8_t*) &(c) ; p < ((uint8_t*)&(c) ) + sizeof(t); ++p) { \
-        printf("%02x", *p); \
-        if (((size_t)p) % 16 == 15) printf("\n"); \
-        else if (((size_t)p) % 4 == 3) printf("-"); \
-      } }
-
-#else
-#define debugprint(n,t,c) {}
-#endif
 
 #ifdef __cplusplus
 }

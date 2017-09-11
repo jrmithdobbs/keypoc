@@ -32,18 +32,29 @@ static int challenge_test(void) {
   }
   else {
     #ifdef DEBUG_PRINT
-    printf("\nSuccess!\n");
+    printf("\n");
     #endif
+    printf("Success!\n");
     return 0;
   }
   return 1;
 }
 
 int main(void) {
-  // Sanity check #pragma pack()
-  assert(sizeof(challenge) == 32+sizeof(key_store)+sizeof(aont_key));
-  // encode and decode using same material
-  assert((sodium_init() || challenge_test()) == 0);
+  // Ensure basic #pragma pack(1) assumptions are met.
+  bool challenge_size_matches_keystore_plus_aont_key =
+    sizeof(challenge) == 32+sizeof(key_store)+sizeof(aont_key);
+  assert(challenge_size_matches_keystore_plus_aont_key);
 
-  return 0;
+  // Ensure absolute sizing assumptions are met.
+  bool challenge_size_is_128b =
+    sizeof(challenge) == 128;
+  assert(challenge_size_is_128b); // Ensure 128 byte size
+
+  // encode and decode using same material
+  return ! ((
+    #ifndef DEBUG_PRINT
+      printf("storage:") < 0 ||
+    #endif
+    sodium_init() || challenge_test()) == 0);
 }

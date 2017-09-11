@@ -1,10 +1,6 @@
 CC := clang
 CXX := clang++
 
-ifdef DEBUG_PRINT
-OPTIONS += -DDEBUG_PRINT
-endif
-
 INCLUDES := \
 	-I/usr/local/include \
 	-I./ \
@@ -13,18 +9,23 @@ INCLUDES := \
 LIBPATH := \
   -L/usr/local/lib \
 
+ARCH_OPTS ?= -march=corei7-avx -mavx2 -mrdseed
+
 OPTS := \
-	-g -O2 -march=corei7-avx -mavx2 \
+	-g -O2 $(ARCH_OPTS) \
 
 TEST_OPTS := \
-	-g -O \
+	-g -O  $(ARCH_OPTS) \
   -DRUN_TESTS \
-  -DDEBUG_PRINT \
 
 CFLAGS := \
 	-std=c11 -Wall -Werror -fPIC \
 	$(INCLUDES) \
-  $(OPTIONS) \
+
+ifdef DEBUG_PRINT
+OPTS += -DDEBUG_PRINT
+TEST_OPTS += -DDEBUG_PRINT
+endif
 
 # Override with path to a .a static lib for static build
 # eg: make LIBSODIUM=./libsodium.a all
@@ -40,19 +41,20 @@ LDFLAGS := \
 OBJS := \
 	src/storage.o \
 
-MODULES := \
+AUTHMODULES := \
 	hmacsha1mem \
 	hmacsha2mem \
 
-MODULES := $(strip $(MODULES))
+AUTHMODULE_DIR := lib
+AUTHMODULE_FTY := .auth
 
-MODULES_PATHS := \
-	$(foreach mod,$(strip $(MODULES)),$(addprefix lib/,$(addsuffix .auth,$(mod))))
+AUTHMODULES_PATHS := \
+	$(foreach mod,$(AUTHMODULES),$(addprefix $(AUTHMODULE_DIR)/,$(addsuffix $(AUTHMODULE_FTY),$(mod))))
 
 TARGETS := \
 	tests/storage \
   tests/mod \
-	$(MODULES_PATHS) \
+	$(AUTHMODULES_PATHS) \
 
 all: $(TARGETS)
 .PHONY: all
@@ -61,42 +63,50 @@ all: $(TARGETS)
 	$(CC) $(CFLAGS) $(OPTS) -c -o "$@" $^
 
 tests:
-	mkdir -p "$@"
+	@mkdir -p "$@"
 
-tests/%_test.o: src/test/%.c tests
-	$(CC) $(CFLAGS) $(TEST_OPTS) -c -o "$@" $(filter %.c %.o %.a,$^)
+tests/%.o: src/test/%.c tests
+	$(CC) $(CFLAGS) $(TEST_OPTS) -c -o "$@" $(filter %.c,$^)
 
-tests/%: tests/%_test.o tests
-	$(CC) $(CFLAGS) $(TEST_OPTS) $(LDFLAGS) -o "$@" $(filter %.c %.o %.a,$^) $(LIBS)
+tests/%: tests/%.o tests
+	$(CC) $(CFLAGS) $(TEST_OPTS) $(LDFLAGS) -o "$@" $(filter %.o %.a,$^) $(LIBS)
 
 bin:
-	mkdir -p "$@"
+	@mkdir -p "$@"
 
 bin/%: src/%.o bin
-	$(CC) $(CFLAGS) $(OPTS) $(LDFLAGS) -o "$@" $(filter %.c %.o %.a,$^) $(LIBS)
+	$(CC) $(CFLAGS) $(OPTS) $(LDFLAGS) -o "$@" $(filter %.o %.a,$^) $(LIBS)
 
 lib:
-	mkdir -p "$@"
+	@mkdir -p "$@"
 
-lib/%.auth.o: src/auth_%.c lib
-	$(CC) $(CFLAGS) $(OPTS) -fPIC -c -o "$@" $(filter %.c %.o %.a,$^)
+lib/%$(AUTHMODULE_FTY).o: src/authmod/%.c lib
+	$(CC) $(CFLAGS) $(OPTS) -fPIC -c -o "$@" $(filter %.c,$^)
 
-lib/%.auth: lib/%.auth.o lib
-	echo $(TARGETS)
+lib/%$(AUTHMODULE_FTY): lib/%$(AUTHMODULE_FTY).o lib
 	$(CC) $(CFLAGS) $(OPTS) $(LDFLAGS) -shared -o "$@" $(filter %.c %.o %.a,$^) $(LIBS)
+
+test: test_storage test_mods
+.PHONY: test
+
+test_storage: tests/storage
+	"./$<"
+.PHONY: test_storage
+
+test_mods: test_mods_each test_mods_combined
+.PHONY: test_mods
+
+test_mods_each: tests/mod $(AUTHMODULES_PATHS)
+	$(foreach mod,$(AUTHMODULES),"./$<" '$(AUTHMODULE_DIR)' $(mod) &&) true
+.PHONY: test_mods_each
+
+test_mods_combined: tests/mod $(AUTHMODULES_PATHS)
+	"./$<" '$(AUTHMODULE_DIR)' $(AUTHMODULES)
+.PHONY: test_mods_combined
 
 clean:
 	rm -rfv tests bin lib src/*.o
 .PHONY: clean
-
-TEST_MODULE := LD_LIBRARY_PATH="$$PWD/lib"; export LD_LIBRARY_PATH; ./tests/mod
-
-test: tests/storage tests/mod $(MODULES_PATHS)
-	# Test loading each module individually
-	@$(foreach mod,$(MODULES),$(strip $(TEST_MODULE) $(mod)); )
-	# Test loading all modules simultaneouslly
-	@$(TEST_MODULE) $(MODULES)
-	./tests/storage
 
 .PRECIOUS: %.o
 .PRECIOUS: src/%.o
@@ -107,6 +117,6 @@ test: tests/storage tests/mod $(MODULES_PATHS)
 .PRECIOUS: tests/%_test.o
 .PRECIOUS: tests/%.o
 .PRECIOUS: tests/%
-.PRECIOUS: lib/%.auth.o
+.PRECIOUS: lib/%$(AUTHMODULE_FTY).o
 .PRECIOUS: lib/%
 .PRECIOUS: bin/%

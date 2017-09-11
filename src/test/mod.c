@@ -1,66 +1,93 @@
-#include <stdint.h>
-#include <stdio.h>
+#include "util.h"
 #include <dlfcn.h>
-#include <errno.h>
-#include <stdlib.h>
-#include <string.h>
 
 typedef int ModF(uint8_t*,int,uint8_t*,int);
 
 int main(int argc, char**argv, char**envp) {
   void* mod;
   ModF *challenge;
+  int errcount = 0;
 
-  if (argc < 2) {
-    printf("At least one module must be specified!\n");
+  if (argc < 3) {
+    printf("Usage:\t%s <module_path> <<module> ...>\n\n", argv[0]);
+    printf("At least one module must be specified!\n\n");
+    printf("While not optional module_path may be the empty string to search the normal linker paths.\n");
+    return 1;
   }
 
-  for (int i = 1; i < argc; ++i) {
+  const char *prefx = argv[1];
+  int prefx_sz = strlen(prefx);
 
-    int   sname_sz = 6;
-    static const char sname[] = ".auth";
-    int pname_sz = strlen(argv[i]);
+  const char suffx[] = ".auth";
+  int suffx_sz = 5;
+
+  for (int i = (argc < 3) ? 1 : 2; i < argc; ++i) {
+
     char *pname = argv[i];
-    int fname_sz = pname_sz + sname_sz;
-    char *fname = malloc(fname_sz);
+    int pname_sz = strlen(pname);
 
+    // Can't load an empty module
+    if (pname_sz == 0) {
+      continue;
+    }
+
+    int fname_sz = prefx_sz + pname_sz + suffx_sz + 1; // + 1 for extra '/'
+
+    char *fname = malloc(fname_sz + 1); // terminating '\0'
     if (fname == NULL) {
       printf("Could not allocate ram: %s", strerror(errno));
       return 1;
     }
+    memset(fname, 0, sizeof(fname_sz));
 
-    memset(fname, 0, fname_sz);
-    strncat(fname, pname, pname_sz);
-    strncat(fname, sname, fname_sz - 1 - pname_sz);
+    printf("test-0x%04x:%.*s:", i - 1, pname_sz, pname);
 
-    printf("test-%04x:%.*s:", i, pname_sz, pname);
+    if (prefx_sz != 0) {
+      snprintf(fname, fname_sz + 1, "%.*s/%.*s%.*s",
+        prefx_sz, prefx, pname_sz, pname, suffx_sz, suffx);
+    } else {
+      snprintf(fname, fname_sz, "%.*s%.*s%.*s",
+        prefx_sz, prefx, pname_sz, pname, suffx_sz, suffx);
+    }
+
+    printf("lib-%.*s:", fname_sz, fname);
 
     //load
     if ((mod = dlopen(fname, RTLD_LOCAL)) == NULL) {
       printf("Error loading module: %s\n", dlerror());
-      return 1;
+      sodium_memzero(fname, sizeof(fname));
+      free(fname);
+      fname = NULL;
+      errcount += 1;
+      continue;
     }
+
+    sodium_memzero(fname, sizeof(fname));
+    free(fname);
+    fname = NULL;
 
     printf("loaded:");
 
     /* use loaded module */
     if ((challenge = dlsym(mod, "challenge")) == NULL) {
       printf("Error resolving challenge: %s\n", dlerror());
-      return 1;
+      errcount += 1;
+      continue;
     }
 
     printf("located:");
 
-    printf("return %04x:", (*challenge)(NULL, 0, NULL, 0));
+    printf("%04x:", (*challenge)(NULL, 0, NULL, 0));
 
     // unload
     if (dlclose(mod) != 0) {
       printf("Error unloading module: %s\n", dlerror());
-      return 1;
+      errcount += 1;
+      continue;
     }
 
     printf(":unloaded:Success!\n");
   }
 
-  return 0;
+  return errcount;
 }

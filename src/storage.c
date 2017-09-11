@@ -1,17 +1,5 @@
 #include "storage.h"
 
-#include <string.h>
-#include <sodium/core.h>
-#include <sodium/randombytes.h>
-#include <sodium/crypto_pwhash_argon2i.h>
-#include <sodium/crypto_stream_chacha20.h>
-#include <sodium/crypto_auth_hmacsha256.h>
-#include <sodium/crypto_generichash_blake2b.h>
-#include <sodium/utils.h>
-
-#include <stdio.h>
-#include <assert.h>
-
 static void key_store_empty(key_store * k) {
   randombytes(k->in, sizeof(k->in));
 }
@@ -24,7 +12,7 @@ static void challenge_new_nonce(challenge * c) {
   randombytes((void*)c, sizeof(c->pw_nonce) + sizeof(c->tf_nonce));
 }
 
-void challenge_empty(challenge * c) {
+static void challenge_empty(challenge * c) {
   challenge_new_nonce(c);
   randombytes((void*)c, sizeof(c->nonce));
   key_store_empty(&c->keys);
