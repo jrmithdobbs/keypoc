@@ -107,6 +107,6 @@ test: tests/storage tests/mod $(MODULES_PATHS)
 .PRECIOUS: tests/%_test.o
 .PRECIOUS: tests/%.o
 .PRECIOUS: tests/%
-.PRECIOUS: lib/%_mod.o
+.PRECIOUS: lib/%.auth.o
 .PRECIOUS: lib/%
 .PRECIOUS: bin/%
