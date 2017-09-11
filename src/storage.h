@@ -16,7 +16,7 @@ typedef struct key_store { union {
   key_store_b b;
 }; } key_store __attribute__((__aligned__(32)));
 
-typedef uint8_t aont_key_b[48];
+typedef uint8_t aont_key_b[32];
 typedef struct aont_key { union {
   struct {
     uint8_t nonce[16];
