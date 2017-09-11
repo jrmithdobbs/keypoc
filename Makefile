@@ -86,7 +86,7 @@ lib/%$(AUTHMODULE_FTY).o: src/authmod/%.c lib
 lib/%$(AUTHMODULE_FTY): lib/%$(AUTHMODULE_FTY).o lib
 	$(CC) $(CFLAGS) $(OPTS) $(LDFLAGS) -shared -o "$@" $(filter %.c %.o %.a,$^) $(LIBS)
 
-test: test_storage test_mods
+test: test_storage test_mods $(TARGETS)
 .PHONY: test
 
 test_storage: tests/storage
