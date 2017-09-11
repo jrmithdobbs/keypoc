@@ -1,7 +1,11 @@
-.*~
-.*.sw?
 *.o
+*.so
+*.dylib
+*.dSYM
+*.a
 tests
 build
 stage
 bin
+.*~
+.*.sw?
