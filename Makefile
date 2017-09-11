@@ -6,10 +6,12 @@ OPTIONS += -DDEBUG_PRINT
 endif
 
 INCLUDES := \
-	-I/usr/local/include
+	-I/usr/local/include \
+	-I./ \
+	-I./src \
 
 LIBPATH := \
-  -L/usr/local/lib
+  -L/usr/local/lib \
 
 OPTS := \
 	-g -O2 -march=corei7-avx -mavx2 \
@@ -38,10 +40,19 @@ LDFLAGS := \
 OBJS := \
 	src/storage.o \
 
+MODULES := \
+	hmacsha1mem \
+	hmacsha2mem \
+
+MODULES := $(strip $(MODULES))
+
+MODULES_PATHS := \
+	$(foreach mod,$(strip $(MODULES)),$(addprefix lib/,$(addsuffix .auth,$(mod))))
+
 TARGETS := \
 	tests/storage \
-	lib/hmacsha1mem.auth \
-	bin/modtest_main \
+  tests/mod \
+	$(MODULES_PATHS) \
 
 all: $(TARGETS)
 .PHONY: all
@@ -52,7 +63,7 @@ all: $(TARGETS)
 tests:
 	mkdir -p "$@"
 
-tests/%_test.o: src/%.c tests
+tests/%_test.o: src/test/%.c tests
 	$(CC) $(CFLAGS) $(TEST_OPTS) -c -o "$@" $(filter %.c %.o %.a,$^)
 
 tests/%: tests/%_test.o tests
@@ -67,17 +78,24 @@ bin/%: src/%.o bin
 lib:
 	mkdir -p "$@"
 
-lib/%_mod.o: src/%_mod.c lib
+lib/%.auth.o: src/auth_%.c lib
 	$(CC) $(CFLAGS) $(OPTS) -fPIC -c -o "$@" $(filter %.c %.o %.a,$^)
 
-lib/%.auth: lib/%_mod.o lib
+lib/%.auth: lib/%.auth.o lib
+	echo $(TARGETS)
 	$(CC) $(CFLAGS) $(OPTS) $(LDFLAGS) -shared -o "$@" $(filter %.c %.o %.a,$^) $(LIBS)
 
 clean:
 	rm -rfv tests bin lib src/*.o
 .PHONY: clean
 
-test: tests/storage
+TEST_MODULE := LD_LIBRARY_PATH="$$PWD/lib"; export LD_LIBRARY_PATH; ./tests/mod
+
+test: tests/storage tests/mod $(MODULES_PATHS)
+	# Test loading each module individually
+	@$(foreach mod,$(MODULES),$(strip $(TEST_MODULE) $(mod)); )
+	# Test loading all modules simultaneouslly
+	@$(TEST_MODULE) $(MODULES)
 	./tests/storage
 
 .PRECIOUS: %.o
