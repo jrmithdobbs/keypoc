@@ -19,7 +19,7 @@ TEST_OPTS := \
   -DRUN_TESTS \
 
 CFLAGS := \
-	-std=c11 -Wall -Werror -fPIC \
+	-std=c11 -Wall -Werror -fpic \
 	$(INCLUDES) \
 
 ifdef DEBUG_PRINT
@@ -35,7 +35,7 @@ LIBS := \
   $(LIBSODIUM)
 
 LDFLAGS := \
-	-fPIC \
+	-fpic \
 	$(LIBPATH) \
 
 OBJS := \
@@ -81,7 +81,7 @@ lib:
 	@mkdir -p "$@"
 
 lib/%$(AUTHMODULE_FTY).o: src/authmod/%.c lib
-	$(CC) $(CFLAGS) $(OPTS) -fPIC -c -o "$@" $(filter %.c,$^)
+	$(CC) $(CFLAGS) $(OPTS) -fpic -c -o "$@" $(filter %.c,$^)
 
 lib/%$(AUTHMODULE_FTY): lib/%$(AUTHMODULE_FTY).o lib
 	$(CC) $(CFLAGS) $(OPTS) $(LDFLAGS) -shared -o "$@" $(filter %.c %.o %.a,$^) $(LIBS)
