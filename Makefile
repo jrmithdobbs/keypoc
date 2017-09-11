@@ -15,11 +15,11 @@ OPTS := \
 	-g -O2 $(ARCH_OPTS) \
 
 TEST_OPTS := \
-	-g -O  $(ARCH_OPTS) \
+	-g -O2 $(ARCH_OPTS) \
   -DRUN_TESTS \
 
 CFLAGS := \
-	-std=c11 -Wall -Werror -fpic \
+	-std=c11 -pedantic -Wall -Werror -fpic \
 	$(INCLUDES) \
 
 ifdef DEBUG_PRINT
@@ -69,13 +69,13 @@ tests/%.o: src/test/%.c tests
 	$(CC) $(CFLAGS) $(TEST_OPTS) -c -o "$@" $(filter %.c,$^)
 
 tests/%: tests/%.o tests
-	$(CC) $(CFLAGS) $(TEST_OPTS) $(LDFLAGS) -o "$@" $(filter %.o %.a,$^) $(LIBS)
+	$(CC) $(CFLAGS) $(TEST_OPTS) $(LDFLAGS) -fpie -o "$@" $(filter %.o %.a,$^) $(LIBS)
 
 bin:
 	@mkdir -p "$@"
 
 bin/%: src/%.o bin
-	$(CC) $(CFLAGS) $(OPTS) $(LDFLAGS) -o "$@" $(filter %.o %.a,$^) $(LIBS)
+	$(CC) $(CFLAGS) $(OPTS) $(LDFLAGS) -fpie -o "$@" $(filter %.o %.a,$^) $(LIBS)
 
 lib:
 	@mkdir -p "$@"
@@ -84,7 +84,7 @@ lib/%$(AUTHMODULE_FTY).o: src/authmod/%.c lib
 	$(CC) $(CFLAGS) $(OPTS) -fpic -c -o "$@" $(filter %.c,$^)
 
 lib/%$(AUTHMODULE_FTY): lib/%$(AUTHMODULE_FTY).o lib
-	$(CC) $(CFLAGS) $(OPTS) $(LDFLAGS) -shared -o "$@" $(filter %.c %.o %.a,$^) $(LIBS)
+	$(CC) $(CFLAGS) $(OPTS) $(LDFLAGS) -shared -o "$@" $(filter %.c %.o %.a,$^)
 
 test: test_storage test_mods $(TARGETS)
 .PHONY: test
@@ -105,7 +105,7 @@ test_mods_combined: tests/mod $(AUTHMODULES_PATHS)
 .PHONY: test_mods_combined
 
 clean:
-	rm -rfv tests bin lib src/*.o
+	@rm -rf tests bin lib src/*.o
 .PHONY: clean
 
 .PRECIOUS: %.o
