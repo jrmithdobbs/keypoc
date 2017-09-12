@@ -53,6 +53,12 @@ AUTHMODULES_PATHS := \
 	$(foreach mod,$(AUTHMODULES),$(addprefix $(AUTHMODULE_DIR)/,$(addsuffix $(AUTHMODULE_FTY),$(mod))))
 
 TARGETS := \
+	bin/keypoc \
+	$(AUTHMODULES_PATHS) \
+
+TEST_TARGETS := \
+	test_mods \
+	test_storage \
 	tests/storage \
   tests/mod \
 	$(AUTHMODULES_PATHS) \
@@ -60,14 +66,23 @@ TARGETS := \
 all: $(TARGETS)
 .PHONY: all
 
-%.o: %.c
-	$(CC) $(CFLAGS) $(OPTS) -c -o "$@" $^
-
-src/%.o: src/%.c
-	$(CC) $(CFLAGS) $(OPTS) -c -o "$@" $(filter %.c,$^)
+bin:
+	@mkdir -p "$@"
 
 tests:
 	@mkdir -p "$@"
+
+lib:
+	@mkdir -p "$@"
+
+%.o: %.c
+	$(CC) $(CFLAGS) $(OPTS) -c -o "$@" $(filter %.c,$^)
+
+bin/%.o: src/bins/%.c bin
+	$(CC) $(CFLAGS) $(OPTS) -c -o "$@" $(filter %.c,$^)
+
+src/%.o: src/%.c
+	$(CC) $(CFLAGS) $(OPTS) -c -o "$@" $(filter %.c,$^)
 
 tests/%.o: src/test/%.c tests
 	$(CC) $(CFLAGS) $(TEST_OPTS) -c -o "$@" $(filter %.c,$^)
@@ -75,14 +90,8 @@ tests/%.o: src/test/%.c tests
 tests/%: tests/%.o src/modauth.o tests
 	$(CC) $(CFLAGS) $(TEST_OPTS) $(LDFLAGS) -fpie -o "$@" $(filter %.o %.a,$^) $(LIBS)
 
-bin:
-	@mkdir -p "$@"
-
-bin/%: src/%.o bin
+bin/%: bin/%.o bin
 	$(CC) $(CFLAGS) $(OPTS) $(LDFLAGS) -fpie -o "$@" $(filter %.o %.a,$^) $(LIBS)
-
-lib:
-	@mkdir -p "$@"
 
 lib/%$(AUTHMODULE_FTY).o: src/authmod/%.c lib
 	$(CC) $(CFLAGS) $(OPTS) -fpic -c -o "$@" $(filter %.c,$^)
@@ -90,7 +99,7 @@ lib/%$(AUTHMODULE_FTY).o: src/authmod/%.c lib
 lib/%$(AUTHMODULE_FTY): lib/%$(AUTHMODULE_FTY).o lib
 	$(CC) $(CFLAGS) $(OPTS) $(LDFLAGS) -shared -o "$@" $(filter %.c %.o %.a,$^) $(LIBS)
 
-test: test_storage test_mods $(TARGETS)
+test: test_storage test_mods $(TEST_TARGETS)
 .PHONY: test
 
 test_storage: tests/storage $(AUTHMODULES_PATHS)
