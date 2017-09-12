@@ -1,6 +1,9 @@
 #include "modauth.h"
 #include <dlfcn.h>
 
+// load a module, look for a symbol called challenge_discover and use it's
+// return to return to the caller in order to interact with the loaded module
+// through the challenge_plugin_hdr interface
 challenge_plugin_hdr * load_challenge_plugin(char *pname, char *mod_path) {
   void* mod;
   challenge_plugin_hdr *header;
