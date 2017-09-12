@@ -16,10 +16,10 @@ OPTS := \
 
 TEST_OPTS := \
 	-g -O2 $(ARCH_OPTS) \
-  -DRUN_TESTS \
 
 CFLAGS := \
-	-std=c11 -pedantic -Wall -Wextra -Werror -fpic \
+	-std=c11 -pedantic -Wall -Wextra -Werror -fpic -fpie \
+	-ffunction-sections -fdata-sections \
 	$(INCLUDES) \
 
 ifdef DEBUG_PRINT
@@ -35,12 +35,22 @@ LIBS := \
   $(LIBSODIUM)
 
 LDFLAGS := \
-	-fpic \
 	$(LIBPATH) \
+	-Wl,-pie \
+
+ifeq ($(shell uname -s),Darwin)
+LDFLAGS += -flto -Wl,-dead_strip
+endif
+
+ifdef UseBitcode
+	OBJ_EXT = bc
+endif
+
+OBJ_EXT ?= o
 
 OBJS := \
-	src/storage.o \
-	src/modauth.o \
+	src/storage.$(OBJ_EXT) \
+	src/modauth.$(OBJ_EXT) \
 
 AUTHMODULES := \
 	null \
@@ -75,26 +85,41 @@ lib:
 %.o: %.c
 	$(CC) $(CFLAGS) $(OPTS) -c -o "$@" $(filter %.c,$^)
 
+%.bc: %.c
+	$(CC) -emit-llvm $(CFLAGS) $(OPTS) -c -o "$@" $(filter %.c,$^)
+
 bin/%.o: src/bins/%.c bin
 	$(CC) $(CFLAGS) $(OPTS) -c -o "$@" $(filter %.c,$^)
+
+bin/%.bc: src/bins/%.c bin
+	$(CC) -emit-llvm $(CFLAGS) $(OPTS) -c -o "$@" $(filter %.c,$^)
 
 src/%.o: src/%.c
 	$(CC) $(CFLAGS) $(OPTS) -c -o "$@" $(filter %.c,$^)
 
+src/%.bc: src/%.c
+	$(CC) -emit-llvm $(CFLAGS) $(OPTS) -c -o "$@" $(filter %.c,$^)
+
 tests/%.o: src/test/%.c tests
 	$(CC) $(CFLAGS) $(TEST_OPTS) -c -o "$@" $(filter %.c,$^)
 
-tests/%: tests/%.o src/modauth.o tests
-	$(CC) $(CFLAGS) $(TEST_OPTS) $(LDFLAGS) -fpie -o "$@" $(filter %.o %.a,$^) $(LIBS)
+tests/%.bc: src/test/%.c tests
+	$(CC) -emit-llvm $(CFLAGS) $(OPTS) -c -o "$@" $(filter %.c,$^)
 
-bin/%: bin/%.o $(OBJS) bin
-	$(CC) $(CFLAGS) $(OPTS) $(LDFLAGS) -fpie -o "$@" $(filter %.o %.a,$^) $(LIBS)
+tests/%: tests/%.$(OBJ_EXT) src/modauth.$(OBJ_EXT) tests
+	$(CC) $(CFLAGS) $(TEST_OPTS) $(LDFLAGS) -o "$@" $(filter %.bc %.o %.a,$^) $(LIBS)
+
+bin/%: bin/%.$(OBJ_EXT) $(OBJS) bin
+	$(CC) $(CFLAGS) $(OPTS) $(LDFLAGS) -o "$@" $(filter %.bc %.o %.a,$^) $(LIBS)
 
 lib/%$(AUTHMODULE_FTY).o: src/authmod/%.c lib
-	$(CC) $(CFLAGS) $(OPTS) -fpic -c -o "$@" $(filter %.c,$^)
+	$(CC) $(CFLAGS) $(OPTS) -c -o "$@" $(filter %.c,$^)
 
-lib/%$(AUTHMODULE_FTY): lib/%$(AUTHMODULE_FTY).o lib
-	$(CC) $(CFLAGS) $(OPTS) $(LDFLAGS) -shared -o "$@" $(filter %.c %.o %.a,$^) $(LIBS)
+lib/%$(AUTHMODULE_FTY).bc: src/authmod/%.c lib
+	$(CC) -emit-llvm $(CFLAGS) $(OPTS) -c -o "$@" $(filter %.c,$^)
+
+lib/%$(AUTHMODULE_FTY): lib/%$(AUTHMODULE_FTY).$(OBJ_EXT) lib
+	$(CC) $(CFLAGS) $(OPTS) $(LDFLAGS) -shared -o "$@" $(filter %.bc %.c %.o %.a,$^) $(LIBS)
 
 test: test_storage test_mods_loading $(TARGETS) $(TEST_TARGETS)
 .PHONY: test
@@ -128,7 +153,7 @@ test_mods_loading: tests/mod $(AUTHMODULES_PATHS)
 .PHONY: test_mods_combined
 
 clean:
-	@rm -rf tests bin lib src/*.o src/*/*.o src/*.s src/*/*.s
+	@rm -rf tests bin lib src/*.{o,bc,s} src/*/*.{o,bc,s} $(OBJS)
 .PHONY: clean
 
 # Don't delete intermediary files, the easy way!
