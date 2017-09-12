@@ -62,6 +62,11 @@ int main(int argc, char **argv) {
     }
   }
 
+  if (sodium_init() != 0) {
+    printf("Failed to load libsodium.");
+    return 1;
+  }
+
   // TODO: read password from stdin
   uint8_t pw[] = "testpassword";
   uint64_t pwlen = strlen((char*)pw);

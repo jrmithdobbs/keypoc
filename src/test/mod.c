@@ -14,6 +14,11 @@ int main(int argc, char**argv) {
     return 1;
   }
 
+  if (sodium_init() != 0) {
+    printf("Failed to load libsodium.");
+    return 1;
+  }
+
   const char *prefx = argv[1];
   int prefx_sz = strlen(prefx);
 
