@@ -37,6 +37,7 @@ void challenge_new_random_tf_key(challenge * c, challenge_plugin_hdr *p) {
   challenge_empty(c);
   randombytes((void*)c->keys.tf, sizeof(c->keys.tf));
   set_auth_key(c, p);
+  p->savekey();
   debugprint("\nchallenge_new_with_tf_key created:", challenge, *c);
 }
 
