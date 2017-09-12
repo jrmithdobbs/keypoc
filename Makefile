@@ -132,7 +132,7 @@ test_storage: tests/storage $(AUTHMODULES_PATHS) test_mods_loading
 .PHONY: test_storage
 
 define storage_test_fmt
-@((${2}) | tr '\n' ':'; echo ${1};) | sed 's,:$$,,'
+@((${2}) | tr '\n' ':'; echo ${1};) | sed '/^$$/d;s,:$$,,'
 endef
 
 test_storage_loading: tests/storage $(AUTHMODULES_PATHS) test_storage
