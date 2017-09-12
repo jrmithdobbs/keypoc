@@ -1,8 +1,6 @@
 #include "modauth.h"
 #include <dlfcn.h>
 
-/* This is currently just a copy of test/mod.c as a starting point. */
-
 challenge_plugin_hdr * load_challenge_plugin(char *pname, char *mod_path) {
   void* mod;
   challenge_plugin_hdr *header;
