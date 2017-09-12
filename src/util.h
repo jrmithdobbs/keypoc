@@ -20,13 +20,15 @@ extern "C" {
 #include <sodium/crypto_generichash_blake2b.h>
 #include <sodium/utils.h>
 
+#define _debugprintend(t,c) (((uint8_t*)&(c)) + sizeof(t))
 #define _debugprint(n,t,c)\
     { printf("%s\n", (n)); \
-      for (uint8_t *p = (uint8_t*) &(c) ; p < ((uint8_t*)&(c) ) + sizeof(t); ++p) { \
+      uint8_t *p; \
+      for (p = (uint8_t*) &(c) ; p < _debugprintend(t,c); ++p) { \
         printf("%02x", *p); \
         if (((size_t)p) % 16 == 15) printf("\n"); \
-        else if (((size_t)p) % 4 == 3) printf("-"); \
-      } printf("\n"); }
+        else if (p < _debugprintend(t,c) - 1 && ((size_t)p) % 4 == 3) printf("-"); \
+      } if (((size_t)p) % 16 != 0) printf("\n"); }
 #ifdef DEBUG_PRINT
 #define debugprint(n,t,c) _debugprint(n,t,c)
 #else

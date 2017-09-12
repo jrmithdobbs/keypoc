@@ -35,8 +35,8 @@ typedef struct challenge {
     };
     uint8_t nonce[32];
   };
+  aont_key  aont;
   key_store keys;
-  aont_key aont;
 } challenge __attribute__((__aligned__(32)));
 #pragma pack(0)
 
