@@ -3,6 +3,8 @@
 *.dylib
 *.dSYM
 *.a
+*.bc
+*.ll
 tests
 build
 stage
