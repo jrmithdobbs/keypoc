@@ -22,7 +22,7 @@ extern "C" {
 
 #define _debugprintend(t,c) (((uint8_t*)&(c)) + sizeof(t))
 #define _debugprint(n,t,c)\
-    { printf("%s\n", (n)); \
+    { printf("%s\n\n", (n)); \
       uint8_t *p; \
       for (p = (uint8_t*) &(c) ; p < _debugprintend(t,c); ++p) { \
         printf("%02x", *p); \
