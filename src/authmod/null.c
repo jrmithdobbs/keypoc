@@ -33,11 +33,13 @@ challenge_plugin_hdr *challenge_discover (void)
 }
 
 int challenge(uint8_t *in, int ilen, uint8_t* out, int olen) {
+  #pragma unused(in, ilen)
   sodium_memzero(out, olen);
   return 0;
 }
 
 int setckey(uint8_t *k, int klen) {
+  #pragma unused(k, klen)
   return 0;
 }
 

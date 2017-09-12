@@ -43,6 +43,7 @@ void challenge_new_random_tf_key(challenge * c, challenge_plugin_hdr *p) {
 void challenge_new_with_tf_key(challenge * c, challenge_plugin_hdr *p, const uint8_t * k) {
   challenge_empty(c);
   memcpy(&c->keys.tf, k, sizeof(c->keys.tf));
+  set_auth_key(c, p);
   debugprint("\nchallenge_new_with_tf_key created:", challenge, *c);
 }
 

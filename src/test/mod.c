@@ -1,7 +1,7 @@
 #include "modauth.h"
 #include <dlfcn.h>
 
-int main(int argc, char**argv, char**envp) {
+int main(int argc, char**argv) {
   void* mod;
   challenge_plugin_hdr *header;
   AMM_Discover *discover;
