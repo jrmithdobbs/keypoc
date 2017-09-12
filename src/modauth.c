@@ -3,96 +3,77 @@
 
 /* This is currently just a copy of test/mod.c as a starting point. */
 
-int main(int argc, char**argv, char**envp) {
+challenge_plugin_hdr * load_challenge_plugin(char *pname, char *mod_path) {
   void* mod;
   challenge_plugin_hdr *header;
   AMM_Discover *discover;
-  int errcount = 0;
 
-  if (argc < 3) {
-    printf("Usage:\t%s <module_path> <<module> ...>\n\n", argv[0]);
-    printf("At least one module must be specified!\n\n");
-    printf("While not optional module_path may be the empty string to search the normal linker paths.\n");
-    return 1;
+  const char _prefx[] = "lib";
+  const char *prefx = mod_path ? mod_path : _prefx;
+  int prefx_sz = strlen(prefx);
+  const char suffx[] = ".auth";
+  int suffx_sz = strlen(suffx);
+  int pname_sz = strlen(pname);
+
+  // Can't load an empty module
+  if (pname_sz == 0) {
+    return NULL;
   }
 
-  const char *prefx = argv[1];
-  int prefx_sz = strlen(prefx);
+  int fname_sz = prefx_sz + pname_sz + suffx_sz + 1; // + 1 for extra '/'
 
-  const char suffx[] = ".auth";
-  int suffx_sz = 5;
+  char *fname = malloc(fname_sz + 1); // terminating '\0'
+  if (fname == NULL) {
+    printf("Could not allocate ram: %s", strerror(errno));
+    return NULL;
+  }
+  memset(fname, 0, sizeof(fname_sz));
 
-  for (int i = (argc < 3) ? 1 : 2; i < argc; ++i) {
+  static const char fmt_wi_slash[] = "%.*s/%.*s%.*s";
+  static const char fmt_wo_slash[] = "%.*s%.*s%.*s";
 
-    char *pname = argv[i];
-    int pname_sz = strlen(pname);
+  snprintf(fname, fname_sz + 1,
+    prefx_sz ? fmt_wi_slash : fmt_wo_slash,
+    prefx_sz, prefx, pname_sz, pname, suffx_sz, suffx);
 
-    // Can't load an empty module
-    if (pname_sz == 0) {
-      continue;
-    }
-
-    int fname_sz = prefx_sz + pname_sz + suffx_sz + 1; // + 1 for extra '/'
-
-    char *fname = malloc(fname_sz + 1); // terminating '\0'
-    if (fname == NULL) {
-      printf("Could not allocate ram: %s", strerror(errno));
-      return 1;
-    }
-    memset(fname, 0, sizeof(fname_sz));
-
-    printf("test-0x%04x:%.*s:", i - 1, pname_sz, pname);
-
-    static const char fmt_wi_slash[] = "%.*s/%.*s%.*s";
-    static const char fmt_wo_slash[] = "%.*s%.*s%.*s";
-
-    snprintf(fname, fname_sz + 1,
-      prefx_sz ? fmt_wi_slash : fmt_wo_slash,
-      prefx_sz, prefx, pname_sz, pname, suffx_sz, suffx);
-
-    printf("lib-%.*s:", fname_sz, fname);
-
-    //load
-    if ((mod = dlopen(fname, RTLD_LOCAL)) == NULL) {
-      printf("Error loading module: %s\n", dlerror());
-      sodium_memzero(fname, sizeof(fname));
-      free(fname);
-      fname = NULL;
-      errcount += 1;
-      continue;
-    }
-
+  //load
+  if ((mod = dlopen(fname, RTLD_LOCAL)) == NULL) {
+    printf("Error loading module: %s\n", dlerror());
     sodium_memzero(fname, sizeof(fname));
     free(fname);
     fname = NULL;
-
-    printf("loaded:");
-
-    /* use loaded module */
-    if ((*(void**) (&discover) = dlsym(mod, "challenge_discover")) == NULL) {
-      printf("Error resolving challenge: %s\n", dlerror());
-      errcount += 1;
-      continue;
-    }
-
-    if ((header = (*discover)()) != NULL) {
-      printf("located:0x%016llx:", (uint64_t) &header->buf);
-    } else {
-      dlclose(mod);
-      errcount += 1;
-      continue;
-    }
-
-
-    // unload
-    if (dlclose(mod) != 0) {
-      printf("Error unloading module: %s\n", dlerror());
-      errcount += 1;
-      continue;
-    }
-
-    printf(":unloaded:Success!\n");
+    return NULL;
   }
 
-  return errcount;
+  sodium_memzero(fname, sizeof(fname));
+  free(fname);
+  fname = NULL;
+
+  /* use loaded module */
+  if ((*(void**) (&discover) = dlsym(mod, "challenge_discover")) == NULL) {
+    printf("Error resolving challenge: %s\n", dlerror());
+    return NULL;
+  }
+
+  if ((header = (*discover)()) == NULL) {
+    dlclose(mod);
+    return NULL;
+  }
+
+  // TODO: re-evaluate, allows modules to use static globals.
+  if (header->mod != NULL) {
+    printf("Duplicate load of module.\n");
+    dlclose(mod);
+    return NULL;
+  }
+
+  header->mod = mod;
+  return header;
+}
+
+// unload a module
+void close_challenge_plugin(challenge_plugin_hdr *c) {
+  if (dlclose(c->mod) != 0) {
+    printf("Error unloading module: %s\n", dlerror());
+  }
 }

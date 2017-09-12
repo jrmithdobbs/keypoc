@@ -1,17 +1,23 @@
 #include "modauth.h"
 
+static uint8_t loaded_key[32] = {0};
+
 int challenge(uint8_t *in, int ilen, uint8_t* out, int olen) {
-  return 0;
+  assert(32 == olen);
+  return 0; //FIXME: NOOP: crypto_auth_hmacsha256(out, in, ilen, loaded_key);
 }
 
 int setckey(uint8_t *k, int klen) {
+  memcpy(loaded_key, k, sizeof(loaded_key));
   return 0;
 }
 
+// no-op for in-memory fobs
 int savekey(void) {
   return 0;
 }
 
+// future
 int test(void) {
   return 0;
 }
@@ -28,9 +34,9 @@ static struct { union {
     .setkey = &setckey,
     .savekey = &savekey,
     .test = &test,
-    .key_max = 64,
+    .key_max = 32,
     .buf_max = buf_sz,
-    .out_max = 20,
+    .out_max = 32,
   },
 };
 

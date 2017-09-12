@@ -1,4 +1,5 @@
 #include "storage.h"
+#include "modauth.h"
 
 static void key_store_empty(key_store * k) {
   randombytes(k->in, sizeof(k->in));
@@ -20,13 +21,22 @@ static void challenge_empty(challenge * c) {
   debugprint("challenge_empty created:", challenge, *c);
 }
 
-void challenge_new_random_tf_key(challenge * c) {
+void challenge_new_random_tf_key(challenge * c, challenge_plugin_hdr *p) {
   challenge_empty(c);
   randombytes((void*)c->keys.tf, sizeof(c->keys.tf));
+  if (sizeof(c->keys.tf) > p->key_max) {
+    uint8_t min[p->key_max];
+    memset(min, 0, p->key_max);
+    int err = crypto_generichash_blake2b(min, p->key_max, c->keys.tf, sizeof(c->keys.tf), NULL, 0);
+    if (err) {} // FIXME: check error code!
+    p->setkey(min, p->key_max);
+  } else {
+    p->setkey(c->keys.tf, sizeof(c->keys.tf));
+  }
   debugprint("\nchallenge_new_with_tf_key created:", challenge, *c);
 }
 
-void challenge_new_with_tf_key(challenge * c, const uint8_t * k) {
+void challenge_new_with_tf_key(challenge * c, challenge_plugin_hdr *p, const uint8_t * k) {
   challenge_empty(c);
   memcpy(&c->keys.tf, k, sizeof(c->keys.tf));
   debugprint("\nchallenge_new_with_tf_key created:", challenge, *c);
@@ -34,14 +44,15 @@ void challenge_new_with_tf_key(challenge * c, const uint8_t * k) {
 
 #define ARGON2_LEN_CHACHA (crypto_stream_chacha20_KEYBYTES + crypto_stream_chacha20_NONCEBYTES)
 
-void challenge_encode(challenge * c, const uint8_t * pw, uint64_t pwlen) {
+void challenge_encode(challenge * c, challenge_plugin_hdr *p, const uint8_t * pw, uint64_t pwlen) {
   // TODO: check various return codes
   uint8_t tf_key[64] = {0};
   uint8_t tempkey[ARGON2_LEN_CHACHA] = {0};
   uint8_t blind[sizeof(aont_key)] = {0};
-  uint8_t tf_resp[crypto_auth_hmacsha256_BYTES] = {0};
+  uint8_t tf_resp[p->out_max];
   int ret;
 
+  sodium_memzero(tf_resp, sizeof(tf_resp));
   memcpy(tf_key, c->keys.tf, 64); // save the 2f key
 
   // encrypt the inner AONT
@@ -71,10 +82,12 @@ void challenge_encode(challenge * c, const uint8_t * pw, uint64_t pwlen) {
   debugprint("\nencode result:", challenge, *c);
 }
 
-void challenge_decode(challenge * c, const uint8_t * pw, uint64_t pwlen, uint8_t * tf_resp, uint64_t resplen) {
+void challenge_decode(challenge * c, challenge_plugin_hdr *p, const uint8_t * pw, uint64_t pwlen) {
   uint8_t tempkey[ARGON2_LEN_CHACHA] = {0};
   uint8_t blind[sizeof(aont_key)] = {0};
   int ret;
+  uint8_t tf_resp[p->out_max];
+  uint64_t resplen = p->out_max;
 
   debugprint("\ndecode tf_resp:", uint8_t[32], *tf_resp);
 

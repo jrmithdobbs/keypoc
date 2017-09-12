@@ -6,6 +6,7 @@ extern "C" {
 #endif
 
 #include "util.h"
+#include "modauth.h"
 
 #pragma pack(1)
 typedef uint8_t key_store_b[64];
@@ -39,10 +40,10 @@ typedef struct challenge {
 } challenge __attribute__((__aligned__(32)));
 #pragma pack(0)
 
-void challenge_new_random_tf_key(challenge * c);
-void challenge_new_with_tf_key(challenge * c, const uint8_t * k);
-void challenge_encode(challenge * c, const uint8_t * pw, uint64_t pwlen);
-void challenge_decode(challenge * c, const uint8_t * pw, uint64_t pwlen, uint8_t *resp, uint64_t resplen);
+void challenge_new_random_tf_key(challenge * c, challenge_plugin_hdr *p);
+void challenge_new_with_tf_key(challenge * c, challenge_plugin_hdr *p, const uint8_t * k);
+void challenge_encode(challenge * c, challenge_plugin_hdr *p, const uint8_t * pw, uint64_t pwlen);
+void challenge_decode(challenge * c, challenge_plugin_hdr *p, const uint8_t * pw, uint64_t pwlen);
 
 #ifdef __cplusplus
 }

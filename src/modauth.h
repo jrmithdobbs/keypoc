@@ -23,7 +23,8 @@ typedef struct challenge_plugin_hdr {
       AMM_SetKey    *setkey;
       AMM_SaveKey   *savekey;
       AMM_Test      *test;
-      uint64_t _pad[2];
+      void *mod;
+      uint64_t _pad;
       uint32_t key_max;
       uint32_t buf_max;
       uint64_t out_max;
@@ -34,10 +35,11 @@ typedef struct challenge_plugin_hdr {
 } __attribute__((__aligned__(4096))) challenge_plugin_hdr;
 
 typedef challenge_plugin_hdr * AMM_Discover(void);
-
 typedef int ModF(uint8_t*,int,uint8_t*,int);
 #pragma pack(0)
 
+challenge_plugin_hdr * load_challenge_plugin(char *pname, char *mod_path);
+void close_challenge_plugin(challenge_plugin_hdr *c);
 
 #ifdef __cplusplus
 }

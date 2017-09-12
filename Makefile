@@ -62,13 +62,16 @@ all: $(TARGETS)
 %.o: %.c
 	$(CC) $(CFLAGS) $(OPTS) -c -o "$@" $^
 
+src/%.o: src/%.c
+	$(CC) $(CFLAGS) $(OPTS) -c -o "$@" $(filter %.c,$^)
+
 tests:
 	@mkdir -p "$@"
 
 tests/%.o: src/test/%.c tests
 	$(CC) $(CFLAGS) $(TEST_OPTS) -c -o "$@" $(filter %.c,$^)
 
-tests/%: tests/%.o tests
+tests/%: tests/%.o src/modauth.o tests
 	$(CC) $(CFLAGS) $(TEST_OPTS) $(LDFLAGS) -fpie -o "$@" $(filter %.o %.a,$^) $(LIBS)
 
 bin:
@@ -84,7 +87,7 @@ lib/%$(AUTHMODULE_FTY).o: src/authmod/%.c lib
 	$(CC) $(CFLAGS) $(OPTS) -fpic -c -o "$@" $(filter %.c,$^)
 
 lib/%$(AUTHMODULE_FTY): lib/%$(AUTHMODULE_FTY).o lib
-	$(CC) $(CFLAGS) $(OPTS) $(LDFLAGS) -shared -o "$@" $(filter %.c %.o %.a,$^)
+	$(CC) $(CFLAGS) $(OPTS) $(LDFLAGS) -shared -o "$@" $(filter %.c %.o %.a,$^) $(LIBS)
 
 test: test_storage test_mods $(TARGETS)
 .PHONY: test
@@ -105,18 +108,8 @@ test_mods_combined: tests/mod $(AUTHMODULES_PATHS)
 .PHONY: test_mods_combined
 
 clean:
-	@rm -rf tests bin lib src/*.o
+	@rm -rf tests bin lib src/*.o src/*/*.o src/*.s src/*/*.s
 .PHONY: clean
 
-.PRECIOUS: %.o
-.PRECIOUS: src/%.o
-.PRECIOUS: %.c
-.PRECIOUS: src/%.c
-.PRECIOUS: %.s
-.PRECIOUS: src/%.s
-.PRECIOUS: tests/%_test.o
-.PRECIOUS: tests/%.o
-.PRECIOUS: tests/%
-.PRECIOUS: lib/%$(AUTHMODULE_FTY).o
-.PRECIOUS: lib/%
-.PRECIOUS: bin/%
+# Don't delete intermediary files, the easy way!
+.SECONDARY:
