@@ -50,14 +50,12 @@ void challenge_new_with_tf_key(challenge * c, challenge_plugin_hdr *p, const uin
 
 void challenge_encode(challenge * c, challenge_plugin_hdr *p, const uint8_t * pw, uint64_t pwlen) {
   // TODO: check various return codes
-  uint8_t tf_key[64] = {0};
   uint8_t tempkey[ARGON2_LEN_CHACHA] = {0};
   uint8_t blind[sizeof(aont_key)] = {0};
   uint8_t tf_resp[p->out_max];
   int ret;
 
   sodium_memzero(tf_resp, sizeof(tf_resp));
-  memcpy(tf_key, c->keys.tf, 64); // save the 2f key
 
   // encrypt the inner AONT
   ret = crypto_pwhash_argon2i((uint8_t*)tempkey, ARGON2_LEN_CHACHA, (char*)c->aont.input, sizeof(c->aont.input), (uint8_t*)&c->aont.nonce,
@@ -79,7 +77,6 @@ void challenge_encode(challenge * c, challenge_plugin_hdr *p, const uint8_t * pw
                               8ULL, 33554432ULL, crypto_pwhash_argon2i_ALG_ARGON2I13);
   crypto_stream_chacha20_xor(c->keys.tf, c->keys.tf, sizeof(key_store) + sizeof(aont_key), &tempkey[crypto_stream_chacha20_KEYBYTES], (uint8_t*)&tempkey);
 
-  sodium_memzero(tf_key , sizeof(tf_key ));
   sodium_memzero(tf_resp, sizeof(tf_resp));
   sodium_memzero(tempkey, sizeof(tempkey));
 
