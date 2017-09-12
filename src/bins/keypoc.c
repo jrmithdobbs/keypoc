@@ -23,7 +23,7 @@ static keypoc_config gconfig = {
   .state=Cempty,
   .nexts=Cdecoded,
   .mod_path="./lib",
-  .mod_name="hmacsha2mem",
+  .mod_name="sha2256",
 };
 
 int main(int argc, char **argv) {
@@ -45,7 +45,7 @@ int main(int argc, char **argv) {
         gconfig.state = Cempty;
         gconfig.nexts = Cdecoded;
         break;
-      case 'm': // auth module (default: hmacsha2mem)
+      case 'm': // auth module (default: sha2256)
         gconfig.mod_name = strdup(optarg);
         break;
 
