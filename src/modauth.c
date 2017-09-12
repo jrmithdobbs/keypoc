@@ -8,7 +8,7 @@ challenge_plugin_hdr * load_challenge_plugin(char *pname, char *mod_path) {
   challenge_plugin_hdr *header;
   AMM_Discover *discover;
 
-  const char _prefx[] = "lib";
+  const char _prefx[] = "lib"; // FIXME: This default should be build-time
   const char *prefx = mod_path ? mod_path : _prefx;
   int prefx_sz = strlen(prefx);
   const char suffx[] = ".auth";
