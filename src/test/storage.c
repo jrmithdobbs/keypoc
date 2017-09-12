@@ -85,10 +85,16 @@ int main(int argc, char **argv) {
   assert(challenge_size_is_128b); // Ensure 128 byte size
 
   // encode and decode using same material
-  return ! ((
+  int ret = ! ((
     #ifndef DEBUG_PRINT
       printf("storage:%s:%s:", gconfig.mod_path, gconfig.mod_name) < 0 ||
     #endif
     sodium_init() ||
     challenge_test(gconfig.mod_name, gconfig.mod_path)) == 0);
+
+  // Because free'ing strdup()'ed config options matters.
+  free(gconfig.mod_path);
+  if (gconfig.mod_name != mod_name_d) free(gconfig.mod_name);
+
+  return ret;
 }
