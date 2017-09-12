@@ -39,7 +39,7 @@ int main(int argc, char**argv) {
     }
     memset(fname, 0, sizeof(fname_sz));
 
-    printf("modtest-%.*s:", pname_sz, pname);
+    printf("modtest:%.*s:", pname_sz, pname);
 
     static const char fmt_wi_slash[] = "%.*s/%.*s%.*s";
     static const char fmt_wo_slash[] = "%.*s%.*s%.*s";
