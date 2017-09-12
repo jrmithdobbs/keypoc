@@ -21,9 +21,7 @@ static void challenge_empty(challenge * c) {
   debugprint("challenge_empty created:", challenge, *c);
 }
 
-void challenge_new_random_tf_key(challenge * c, challenge_plugin_hdr *p) {
-  challenge_empty(c);
-  randombytes((void*)c->keys.tf, sizeof(c->keys.tf));
+void set_auth_key(challenge *c, challenge_plugin_hdr *p) {
   if (sizeof(c->keys.tf) > p->key_max) {
     uint8_t min[p->key_max];
     memset(min, 0, p->key_max);
@@ -33,6 +31,12 @@ void challenge_new_random_tf_key(challenge * c, challenge_plugin_hdr *p) {
   } else {
     p->setkey(c->keys.tf, sizeof(c->keys.tf));
   }
+}
+
+void challenge_new_random_tf_key(challenge * c, challenge_plugin_hdr *p) {
+  challenge_empty(c);
+  randombytes((void*)c->keys.tf, sizeof(c->keys.tf));
+  set_auth_key(c, p);
   debugprint("\nchallenge_new_with_tf_key created:", challenge, *c);
 }
 

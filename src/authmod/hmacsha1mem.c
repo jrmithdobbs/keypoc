@@ -20,7 +20,7 @@ static struct { union {
     .test = &test,
     .key_max = 32,
     .buf_max = buf_sz,
-    .out_max = 32,
+    .out_max = 20,
   },
 };
 static uint8_t *loaded_key = challenge_plugin_info.hdr.buf;
@@ -32,8 +32,8 @@ challenge_plugin_hdr *challenge_discover (void)
 }
 
 int challenge(uint8_t *in, int ilen, uint8_t* out, int olen) {
-  assert(32 == olen);
-  return 0; //FIXME: NOOP: crypto_auth_hmacsha256(out, in, ilen, loaded_key);
+  assert(olen <= 32);
+  return 0; // FIXME:NOOP crypto_auth_hmacsha1(out, in, ilen, loaded_key);
 }
 
 int setckey(uint8_t *k, int klen) {
@@ -51,4 +51,3 @@ int savekey(void) {
 int test(void) {
   return 0;
 }
-
