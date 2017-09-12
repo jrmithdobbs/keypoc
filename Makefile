@@ -87,7 +87,7 @@ tests/%.o: src/test/%.c tests
 tests/%: tests/%.o src/modauth.o tests
 	$(CC) $(CFLAGS) $(TEST_OPTS) $(LDFLAGS) -fpie -o "$@" $(filter %.o %.a,$^) $(LIBS)
 
-bin/%: bin/%.o bin
+bin/%: bin/%.o $(OBJS) bin
 	$(CC) $(CFLAGS) $(OPTS) $(LDFLAGS) -fpie -o "$@" $(filter %.o %.a,$^) $(LIBS)
 
 lib/%$(AUTHMODULE_FTY).o: src/authmod/%.c lib

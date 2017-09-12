@@ -2,9 +2,6 @@
 #include "storage.h"
 #include "modauth.h"
 
-#include "src/storage.c"
-#include "src/modauth.c"
-
 #include <unistd.h>
 
 enum { Cempty = 0LL, Cdecoded, Cencoded };
