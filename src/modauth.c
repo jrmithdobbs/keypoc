@@ -54,6 +54,7 @@ challenge_plugin_hdr * load_challenge_plugin(char *pname, char *mod_path) {
   }
 
   if ((header = (*discover)()) == NULL) {
+    printf("Module failed to return a plugin header.\n");
     dlclose(mod);
     return NULL;
   }
