@@ -22,7 +22,7 @@ static struct { union {
     .test = &test,
     .key_max = 32,
     .buf_max = buf_sz,
-    .out_max = 20,
+    .out_max = 32,
   },
 };
 
