@@ -1,22 +1,32 @@
 #include "storage.h"
 #include "modauth.h"
 
+/*
 static void key_store_empty(key_store * k) {
+  randombytes(k->b, sizeof(k->b));
+}
+*/
+
+static void key_store_empty_tf(key_store * k) {
+  randombytes(k->tf, sizeof(k->tf));
+}
+
+static void key_store_empty_in(key_store * k) {
   randombytes(k->in, sizeof(k->in));
 }
 
 static void aont_key_empty(aont_key * a) {
-  randombytes((void*)a, sizeof(aont_key));
+  randombytes(a->b, sizeof(a->b));
 }
 
 static void challenge_new_nonce(challenge * c) {
-  randombytes((void*)c, sizeof(c->pw_nonce) + sizeof(c->tf_nonce));
+  randombytes(c->nonce, sizeof(c->nonce));
 }
 
 static void challenge_empty(challenge * c) {
+  sodium_memzero(c, sizeof(challenge));
   challenge_new_nonce(c);
-  randombytes((void*)c, sizeof(c->nonce));
-  key_store_empty(&c->keys);
+  key_store_empty_in(&c->keys);
   aont_key_empty(&c->aont);
   debugprint("challenge_empty created:", challenge, *c);
 }
@@ -35,7 +45,7 @@ void set_auth_key(challenge *c, challenge_plugin_hdr *p) {
 
 void challenge_new_random_tf_key(challenge * c, challenge_plugin_hdr *p) {
   challenge_empty(c);
-  randombytes((void*)c->keys.tf, sizeof(c->keys.tf));
+  key_store_empty_tf(&c->keys);
   set_auth_key(c, p);
   p->savekey();
   debugprint("\nchallenge_new_with_tf_key created:", challenge, *c);
