@@ -62,22 +62,24 @@ void challenge_encode(challenge * c, challenge_plugin_hdr *p, const uint8_t * pw
   // encrypt the inner AONT
   ret = crypto_pwhash_argon2i((uint8_t*)tempkey, ARGON2_LEN_CHACHA, (char*)c->aont.input, sizeof(c->aont.input), (uint8_t*)&c->aont.nonce,
                               8ULL, 33554432ULL, crypto_pwhash_argon2i_ALG_ARGON2I13);
-  crypto_stream_chacha20_xor(c->keys.b, c->keys.b, sizeof(key_store), &tempkey[crypto_stream_chacha20_KEYBYTES], (uint8_t*)&tempkey);
-  ret = crypto_generichash_blake2b(blind, sizeof(blind), c->keys.b, sizeof(c->keys), c->pw_nonce, 32);
+  crypto_stream_chacha20_xor(c->keys.b, c->keys.b, sizeof(c->keys.b), &tempkey[crypto_stream_chacha20_KEYBYTES], (uint8_t*)&tempkey);
+  ret = crypto_generichash_blake2b(blind, sizeof(blind), c->keys.b, sizeof(c->keys.b), c->pw_nonce, sizeof(blind));
   for (uint64_t *p = (uint64_t*) blind, *q = (uint64_t*) c->aont.b; p < (uint64_t*)(blind+sizeof(blind)); ++p, ++q) *q ^= *p;
 
   // encrypt with the 2f challenge response
   p->challenge(c->tf_nonce, 16, tf_resp, p->out_max);
   ret = crypto_pwhash_argon2i((uint8_t*)tempkey, ARGON2_LEN_CHACHA, (char*)tf_resp, p->out_max, c->tf_nonce,
                               8ULL, 33554432ULL, crypto_pwhash_argon2i_ALG_ARGON2I13);
-  crypto_stream_chacha20_xor(c->keys.b, c->keys.b, sizeof(key_store) + sizeof(aont_key), &tempkey[crypto_stream_chacha20_KEYBYTES], (uint8_t*)&tempkey);
+  crypto_stream_chacha20_xor(c->aont.b, c->aont.b, sizeof(c->aont.b) + sizeof(c->keys.b),
+    &tempkey[crypto_stream_chacha20_KEYBYTES], (uint8_t*)&tempkey);
 
-  debugprint("\nencode tf_resp:", uint8_t[crypto_auth_hmacsha256_BYTES], tf_resp);
+  debugprint("\nencode tf_resp:", tf_resp, tf_resp);
 
   // encrypt with the pw hash
   ret = crypto_pwhash_argon2i((uint8_t*)tempkey, ARGON2_LEN_CHACHA, (char*)pw, pwlen, c->pw_nonce,
                               8ULL, 33554432ULL, crypto_pwhash_argon2i_ALG_ARGON2I13);
-  crypto_stream_chacha20_xor(c->keys.tf, c->keys.tf, sizeof(key_store) + sizeof(aont_key), &tempkey[crypto_stream_chacha20_KEYBYTES], (uint8_t*)&tempkey);
+  crypto_stream_chacha20_xor(c->aont.b, c->aont.b, sizeof(c->aont.b) + sizeof(c->keys.b),
+    &tempkey[crypto_stream_chacha20_KEYBYTES], (uint8_t*)&tempkey);
 
   sodium_memzero(tf_resp, sizeof(tf_resp));
   sodium_memzero(tempkey, sizeof(tempkey));
@@ -93,24 +95,28 @@ void challenge_decode(challenge * c, challenge_plugin_hdr *p, const uint8_t * pw
   uint64_t resplen = p->out_max;
 
   p->challenge(c->tf_nonce, 16, tf_resp, p->out_max);
-  debugprint("\ndecode tf_resp:", uint8_t[32], *tf_resp);
+  debugprint("\ndecode tf_resp:", tf_resp, tf_resp);
 
   // decrypt the pw hash
   ret = crypto_pwhash_argon2i((uint8_t*)tempkey, ARGON2_LEN_CHACHA, (char*)pw, pwlen, c->pw_nonce,
                               8ULL, 33554432ULL, crypto_pwhash_argon2i_ALG_ARGON2I13);
-  crypto_stream_chacha20_xor(c->keys.b, c->keys.b, sizeof(key_store) + sizeof(aont_key), &tempkey[crypto_stream_chacha20_KEYBYTES], (uint8_t*)&tempkey);
+  crypto_stream_chacha20_xor(c->aont.b, c->aont.b, sizeof(c->aont.b) + sizeof(c->keys.b),
+    &tempkey[crypto_stream_chacha20_KEYBYTES], (uint8_t*)&tempkey);
 
   // decrypt the 2f challange response
   ret = crypto_pwhash_argon2i((uint8_t*)tempkey, ARGON2_LEN_CHACHA, (char*)tf_resp, resplen, c->tf_nonce,
                               8ULL, 33554432ULL, crypto_pwhash_argon2i_ALG_ARGON2I13);
-  crypto_stream_chacha20_xor(c->keys.b, c->keys.b, sizeof(key_store) + sizeof(aont_key), &tempkey[crypto_stream_chacha20_KEYBYTES], (uint8_t*)&tempkey);
+  crypto_stream_chacha20_xor(c->aont.b, c->aont.b, sizeof(c->aont.b) + sizeof(c->keys.b),
+    &tempkey[crypto_stream_chacha20_KEYBYTES], (uint8_t*)&tempkey);
 
   // decrypt the inner AONT
-  ret = crypto_generichash_blake2b(blind, sizeof(blind), c->keys.b, sizeof(c->keys), c->pw_nonce, 32);
+  ret = crypto_generichash_blake2b(blind, sizeof(blind), c->keys.b, sizeof(c->keys.b), c->pw_nonce, sizeof(blind));
+
   for (uint64_t *p = (uint64_t*) blind, *q = (uint64_t*) c->aont.b; p < (uint64_t*)(blind+sizeof(blind)); ++p, ++q) *q ^= *p;
   ret = crypto_pwhash_argon2i((uint8_t*)tempkey, ARGON2_LEN_CHACHA, (char*)c->aont.input, sizeof(c->aont.input), (uint8_t*)&c->aont.nonce,
                               8ULL, 33554432ULL, crypto_pwhash_argon2i_ALG_ARGON2I13);
-  crypto_stream_chacha20_xor(c->keys.b, c->keys.b, sizeof(key_store), &tempkey[crypto_stream_chacha20_KEYBYTES], (uint8_t*)&tempkey);
+  crypto_stream_chacha20_xor(c->keys.b, c->keys.b, sizeof(c->keys.b),
+    &tempkey[crypto_stream_chacha20_KEYBYTES], (uint8_t*)&tempkey);
 
   sodium_memzero(tempkey, sizeof(tempkey));
   debugprint("\ndecode result:", challenge, *c);
