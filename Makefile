@@ -40,6 +40,7 @@ LDFLAGS := \
 
 OBJS := \
 	src/storage.o \
+	src/modauth.o \
 
 AUTHMODULES := \
 	hmacsha1mem \
@@ -92,7 +93,7 @@ lib/%$(AUTHMODULE_FTY): lib/%$(AUTHMODULE_FTY).o lib
 test: test_storage test_mods $(TARGETS)
 .PHONY: test
 
-test_storage: tests/storage
+test_storage: tests/storage $(AUTHMODULES_PATHS)
 	"./$<"
 .PHONY: test_storage
 
