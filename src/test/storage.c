@@ -25,7 +25,6 @@ static int challenge_test(char *mod_name, char *mod_path) {
     #ifdef DEBUG_PRINT
     printf("\nFailed!\n\n");
     #endif
-    debugprint("\ntf_resp:", uint8_t[mod->out_max], tf_resp);
     debugprint("\nc1:",challenge, c1);
     return 0;
   }
