@@ -31,7 +31,7 @@ static void challenge_empty(challenge * c) {
   debugprint("challenge_empty created:", challenge, *c);
 }
 
-void set_auth_key(challenge *c, challenge_plugin_hdr *p) {
+static void set_auth_key(challenge *c, challenge_plugin_hdr *p) {
   if (sizeof(c->keys.tf) > p->key_max) {
     uint8_t min[p->key_max];
     memset(min, 0, p->key_max);
