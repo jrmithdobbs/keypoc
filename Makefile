@@ -2,9 +2,9 @@ CC := clang
 CXX := clang++
 
 INCLUDES := \
-	-I/usr/local/include \
 	-I./ \
 	-I./src \
+	-I/usr/local/include \
 
 LIBPATH := \
   -L/usr/local/lib \
@@ -43,8 +43,8 @@ OBJS := \
 	src/modauth.o \
 
 AUTHMODULES := \
-	hmacsha1mem \
-	hmacsha2mem \
+	null \
+	sha2256 \
 
 AUTHMODULE_DIR := lib
 AUTHMODULE_FTY := .auth
@@ -57,13 +57,10 @@ TARGETS := \
 	$(AUTHMODULES_PATHS) \
 
 TEST_TARGETS := \
-	test_mods \
-	test_storage \
 	tests/storage \
   tests/mod \
-	$(AUTHMODULES_PATHS) \
 
-all: $(TARGETS)
+all: $(TARGETS) $(TEST_TARGETS)
 .PHONY: all
 
 bin:
@@ -99,11 +96,22 @@ lib/%$(AUTHMODULE_FTY).o: src/authmod/%.c lib
 lib/%$(AUTHMODULE_FTY): lib/%$(AUTHMODULE_FTY).o lib
 	$(CC) $(CFLAGS) $(OPTS) $(LDFLAGS) -shared -o "$@" $(filter %.c %.o %.a,$^) $(LIBS)
 
-test: test_storage test_mods $(TEST_TARGETS)
+test: test_storage test_mods $(TARGETS) $(TEST_TARGETS)
 .PHONY: test
 
 test_storage: tests/storage $(AUTHMODULES_PATHS)
 	"./$<"
+	"./$<" -p lib
+	"./$<" -m null
+	"./$<" -m null -p lib
+	"./$<" -m sha2256
+	"./$<" -m sha2256 -p lib
+	# Expected errors
+	"./$<" -m null -p '' || true
+	"./$<" -m sha2256 -p '' || true
+	"./$<" -m nonexistant || true
+	"./$<" -m nonexistant -p lib || true
+	# End expected errors
 .PHONY: test_storage
 
 test_mods: test_mods_each test_mods_combined

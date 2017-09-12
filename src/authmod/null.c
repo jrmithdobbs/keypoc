@@ -1,5 +1,7 @@
 #include "modauth.h"
 
+#include <unistd.h>
+
 // forward decls
 int challenge(uint8_t *in, int ilen, uint8_t* out, int olen);
 int setckey(uint8_t *k, int klen);
@@ -23,7 +25,6 @@ static struct { union {
     .out_max = 20,
   },
 };
-static uint8_t *loaded_key = challenge_plugin_info.hdr.buf;
 
 // Entry point the app looks for to find the challenge_plugin_hdr
 challenge_plugin_hdr *challenge_discover (void)
@@ -32,13 +33,11 @@ challenge_plugin_hdr *challenge_discover (void)
 }
 
 int challenge(uint8_t *in, int ilen, uint8_t* out, int olen) {
-  assert(olen <= 32);
-  return 0; // FIXME:NOOP crypto_auth_hmacsha1(out, in, ilen, loaded_key);
+  sodium_memzero(out, olen);
+  return 0;
 }
 
 int setckey(uint8_t *k, int klen) {
-  assert(klen <= 32);
-  memcpy(loaded_key, k, klen);
   return 0;
 }
 
