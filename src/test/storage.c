@@ -87,7 +87,7 @@ int main(int argc, char **argv) {
   // encode and decode using same material
   return ! ((
     #ifndef DEBUG_PRINT
-      printf("storage:%s:%s:", gconfig.mod_name, gconfig.mod_path) < 0 ||
+      printf("storage:%s:%s:", gconfig.mod_path, gconfig.mod_name) < 0 ||
     #endif
     sodium_init() ||
     challenge_test(gconfig.mod_name, gconfig.mod_path)) == 0);

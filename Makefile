@@ -107,7 +107,7 @@ test_storage: tests/storage $(AUTHMODULES_PATHS) test_mods_loading
 .PHONY: test_storage
 
 define storage_test_fmt
-@(((${2}) | tr '\n' ':'; echo ${1};) | sed 's,:$$,,')
+@((${2}) | tr '\n' ':'; echo ${1};) | sed 's,:$$,,'
 endef
 
 test_storage_loading: tests/storage $(AUTHMODULES_PATHS) test_storage
@@ -116,10 +116,11 @@ test_storage_loading: tests/storage $(AUTHMODULES_PATHS) test_storage
 	$(call storage_test_fmt,,"./$<" -m null -p lib)
 	$(call storage_test_fmt,,"./$<" -m sha2256)
 	$(call storage_test_fmt,,"./$<" -m sha2256 -p lib)
-	$(call storage_test_fmt,Expected Error!,"./$<" -m null -p '' || true)
-	$(call storage_test_fmt,Expected Error!,"./$<" -m sha2256 -p '' || true)
-	$(call storage_test_fmt,Expected Error!,"./$<" -m nonexistant || true)
-	$(call storage_test_fmt,Expected Error!,"./$<" -m nonexistant -p lib || true)
+	$(call storage_test_fmt,Success!,"./$<" -m null -p '' || true)
+	$(call storage_test_fmt,Success!,"./$<" -m sha2256 -p '' || true)
+	$(call storage_test_fmt,Success!,"./$<" -m nonexistant || true)
+	$(call storage_test_fmt,Success!,"./$<" -m nonexistant -p lib || true)
+	$(call storage_test_fmt,Success!,"./$<" -m nonexistant -p '' || true)
 .PHONY: test_storage_long
 
 test_mods_loading: tests/mod $(AUTHMODULES_PATHS)
