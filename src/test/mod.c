@@ -79,7 +79,8 @@ int main(int argc, char**argv) {
     }
 
     if ((header = (*discover)()) != NULL) {
-      printf("located:0x%016llx:", (uint64_t) &header->buf);
+      printf("located:0x%016llx:%s", (uint64_t) header,
+        ((uint64_t) header) % 4096 == 0 ? "aligned" : "unaligned");
     } else {
       dlclose(mod);
       errcount += 1;
